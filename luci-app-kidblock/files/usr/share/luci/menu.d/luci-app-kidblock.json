@@ -1,0 +1,36 @@
+{
+  "admin/services/kidblock": {
+    "title": "KidBlock",
+    "order": 70,
+    "action": {
+      "type": "firstchild"
+    },
+    "depends": {
+      "acl": [ "luci-app-kidblock" ]
+    }
+  },
+  "admin/services/kidblock/status": {
+    "title": "Status",
+    "order": 10,
+    "action": {
+      "type": "view",
+      "path": "kidblock/status"
+    }
+  },
+  "admin/services/kidblock/devices": {
+    "title": "Enheter",
+    "order": 20,
+    "action": {
+      "type": "cbi",
+      "path": "kidblock/devices"
+    }
+  },
+  "admin/services/kidblock/schedule": {
+    "title": "Schema",
+    "order": 30,
+    "action": {
+      "type": "cbi",
+      "path": "kidblock/schedule"
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "luci-app-kidblock": {
+    "description": "Grant access to kidblock UCI and ubus",
+    "read": {
+      "uci": [ "kidblock" ],
+      "ubus": {
+        "kidblock": [ "status" ]
+      }
+    },
+    "write": {
+      "uci": [ "kidblock" ],
+      "ubus": {
+        "kidblock": [ "apply" ]
+      }
+    }
+  }
+}

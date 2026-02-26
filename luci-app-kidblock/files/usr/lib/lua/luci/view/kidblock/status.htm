@@ -1,0 +1,40 @@
+<%+header%>
+
+<h2><%:KidBlock Status%></h2>
+<p><%:Tryck för att omedelbart tillämpa schema och bryta nya blockerade anslutningar.%></p>
+
+<div class="cbi-page-actions">
+	<button class="btn cbi-button cbi-button-apply" id="kidblock-apply">
+		<%:Tillämpa nu (flush + uppdatera)%>
+	</button>
+</div>
+
+<pre id="kidblock-output" style="margin-top: 1em; white-space: pre-wrap;"></pre>
+
+<script type="text/javascript">
+(function() {
+	var btn = document.getElementById('kidblock-apply');
+	var out = document.getElementById('kidblock-output');
+
+	btn.addEventListener('click', function() {
+		btn.disabled = true;
+		out.textContent = 'Kör...';
+		fetch('<%=url([[admin]], [[services]], [[kidblock]], [[apply]])%>', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' }
+		})
+		.then(function(r) { return r.json(); })
+		.then(function(data) {
+			out.textContent = JSON.stringify(data, null, 2);
+		})
+		.catch(function(err) {
+			out.textContent = 'Fel: ' + err;
+		})
+		.finally(function() {
+			btn.disabled = false;
+		});
+	});
+})();
+</script>
+
+<%+footer%>
