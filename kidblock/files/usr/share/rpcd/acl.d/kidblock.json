@@ -10,7 +10,7 @@
     "write": {
       "uci": [ "kidblock" ],
       "ubus": {
-        "kidblock": [ "apply" ]
+        "kidblock": [ "apply", "override", "clear_override" ]
       }
     }
   }
