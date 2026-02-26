@@ -7,9 +7,13 @@ table inet kidblock {
 		type ipv6_addr
 	}
 
+	set wan_ifnames {
+		type ifname
+	}
+
 	chain forward_kidblock {
 		type filter hook forward priority -150; policy accept;
-		iifname "br-lan" oifname "wan" ip saddr @blocked4 drop
-		iifname "br-lan" oifname "wan" ip6 saddr @blocked6 drop
+		iifname "br-lan" oifname @wan_ifnames ip saddr @blocked4 drop
+		iifname "br-lan" oifname @wan_ifnames ip6 saddr @blocked6 drop
 	}
 }

@@ -1,12 +1,28 @@
 <%+header%>
 
 <h2><%:KidBlock Status%></h2>
-<p><%:Tryck för att omedelbart tillämpa schema och bryta nya blockerade anslutningar.%></p>
+<p><%:Tryck för att omedelbart tillämpa schema och hantera tillfällig blockering per enhet.%></p>
 
 <div class="cbi-page-actions">
 	<button class="btn cbi-button cbi-button-apply" id="kidblock-apply">
 		<%:Tillämpa nu (flush + uppdatera)%>
 	</button>
+</div>
+
+<div style="margin-top: 1em;">
+	<h3><%:Enheter%></h3>
+	<table class="table" id="kidblock-devices">
+		<thead>
+			<tr>
+				<th><%:ID%></th>
+				<th><%:Namn%></th>
+				<th><%:Blockerad%></th>
+				<th><%:Override till%></th>
+				<th><%:Åtgärder%></th>
+			</tr>
+		</thead>
+		<tbody></tbody>
+	</table>
 </div>
 
 <pre id="kidblock-output" style="margin-top: 1em; white-space: pre-wrap;"></pre>
@@ -15,24 +31,105 @@
 (function() {
 	var btn = document.getElementById('kidblock-apply');
 	var out = document.getElementById('kidblock-output');
+	var tbody = document.querySelector('#kidblock-devices tbody');
+
+	function post(url, params) {
+		return fetch(url, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+			body: new URLSearchParams(params || {})
+		}).then(function(r) { return r.json(); });
+	}
+
+	function loadStatus() {
+		return post('<%=url([[admin]], [[services]], [[kidblock]], [[status_json]])%>')
+			.then(function(data) {
+				out.textContent = JSON.stringify(data, null, 2);
+				renderDevices(data.devices || []);
+			});
+	}
+
+	function renderDevices(devices) {
+		tbody.innerHTML = '';
+		devices.forEach(function(dev) {
+			var tr = document.createElement('tr');
+			var until = Number(dev.override_until || 0);
+			var untilText = until > 0 ? (new Date(until * 1000)).toLocaleString() : '-';
+
+			tr.innerHTML =
+				'<td>' + (dev.id || '') + '</td>' +
+				'<td>' + (dev.name || '') + '</td>' +
+				'<td>' + (Number(dev.blocked) === 1 ? 'Ja' : 'Nej') + '</td>' +
+				'<td>' + untilText + '</td>' +
+				'<td></td>';
+
+			var actions = tr.lastChild;
+			var blockBtn = document.createElement('button');
+			blockBtn.className = 'btn cbi-button';
+			blockBtn.textContent = 'Blockera 30 min';
+			blockBtn.addEventListener('click', function() {
+				blockBtn.disabled = true;
+				post('<%=url([[admin]], [[services]], [[kidblock]], [[override]])%>', {
+					device: dev.id,
+					minutes: 30
+				})
+				.then(function(data) {
+					out.textContent = JSON.stringify(data, null, 2);
+					renderDevices(data.devices || []);
+				})
+				.catch(function(err) {
+					out.textContent = 'Fel: ' + err;
+				})
+				.finally(function() {
+					blockBtn.disabled = false;
+				});
+			});
+
+			var clearBtn = document.createElement('button');
+			clearBtn.className = 'btn cbi-button';
+			clearBtn.style.marginLeft = '0.5em';
+			clearBtn.textContent = 'Avbryt override';
+			clearBtn.addEventListener('click', function() {
+				clearBtn.disabled = true;
+				post('<%=url([[admin]], [[services]], [[kidblock]], [[clear_override]])%>', {
+					device: dev.id
+				})
+				.then(function(data) {
+					out.textContent = JSON.stringify(data, null, 2);
+					renderDevices(data.devices || []);
+				})
+				.catch(function(err) {
+					out.textContent = 'Fel: ' + err;
+				})
+				.finally(function() {
+					clearBtn.disabled = false;
+				});
+			});
+
+			actions.appendChild(blockBtn);
+			actions.appendChild(clearBtn);
+			tbody.appendChild(tr);
+		});
+	}
 
 	btn.addEventListener('click', function() {
 		btn.disabled = true;
 		out.textContent = 'Kör...';
-		fetch('<%=url([[admin]], [[services]], [[kidblock]], [[apply]])%>', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' }
-		})
-		.then(function(r) { return r.json(); })
-		.then(function(data) {
-			out.textContent = JSON.stringify(data, null, 2);
-		})
-		.catch(function(err) {
-			out.textContent = 'Fel: ' + err;
-		})
-		.finally(function() {
-			btn.disabled = false;
-		});
+		post('<%=url([[admin]], [[services]], [[kidblock]], [[apply]])%>')
+			.then(function(data) {
+				out.textContent = JSON.stringify(data, null, 2);
+				renderDevices(data.devices || []);
+			})
+			.catch(function(err) {
+				out.textContent = 'Fel: ' + err;
+			})
+			.finally(function() {
+				btn.disabled = false;
+			});
+	});
+
+	loadStatus().catch(function(err) {
+		out.textContent = 'Fel vid status: ' + err;
 	});
 })();
 </script>
